@@ -1,0 +1,13 @@
+/.mypy_cache
+/.vscode
+/sandbox
+/venv
+/metastore_db
+/derby.log
+__pycache__/
+*.pyc
+/build
+/dist
+/nodalize.egg-info
+/s3*
+/TestDb
