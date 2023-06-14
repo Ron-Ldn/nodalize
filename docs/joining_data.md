@@ -64,7 +64,7 @@ class EquityAdjustedPrice(DataNode):
             "equity_raw_price": "EquityRawPrice",
             "fx_rate": DateDependency(
                 "FxRate",
-                data_fields={"Rate": "FxRate", "BaseCurrency": "BaseCurrency"},
+                data_fields={"Rate": "FxRate", "BaseCurrency": "Currency"},
                 filters=[[("PriceCurrency", "=", "USD")]],
             ),
         }
@@ -72,8 +72,8 @@ class EquityAdjustedPrice(DataNode):
     def compute(self, parameters, equity_raw_price, fx_rate):
         equity_raw_price_df = equity_raw_price(ignore_deltas=True)
         fx_rate_df = fx_rate(ignore_deltas=True)
-        df = self.join(equity_raw_price_df, fx_rate_df, on=("Currency", "BaseCurrency"), how="inner")
-        df = self.add(df, "AdjustedPrice", self.column(df, "Price") * self.column(df, "AdjustmentFactor"))
-        df = self.add(df, "AdjustedPriceUSD", self.column(df, "AdjustedPrice") / self.column(df, "FxRate"))
+        df = self.calculator.left_join_data_frames(equity_raw_price_df, fx_rate_df, on=["Currency"])
+        df = self.calculator.add_column(df, "AdjustedPrice", self.calculator.get_column(df, "Price") * self.calculator.get_column(df, "AdjustmentFactor"))
+        df = self.calculator.add_column(df, "AdjustedPriceUSD", self.calculator.get_column(df, "AdjustedPrice") / self.calculator.get_column(df, "FxRate"))
         return df
 ```

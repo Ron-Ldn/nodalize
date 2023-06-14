@@ -76,8 +76,8 @@ class DerivedNode(DataNode):
 
     def compute(self, parameters, ParentNode):
         df = ParentNode()
-        df = self.add(df, "Value1", self.column(df, "RawValue") * self._id)
-        df = self.add(df, "Value2", self.column(df, "RawValue") + self._id)
+        df = self.calculator.add_column(df, "Value1", self.calculator.get_column(df, "RawValue") * self._id)
+        df = self.calculator.add_column(df, "Value2", self.calculator.get_column(df, "RawValue") + self._id)
         return df
 
 

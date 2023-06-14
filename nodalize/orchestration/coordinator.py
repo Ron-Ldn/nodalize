@@ -151,6 +151,10 @@ class Coordinator:
         while retry:
             try:
                 data = node.load_and_compute(parameters, new_batch_id, parent_batch_ids)
+
+                if data is None:
+                    logging.info(f"No data returned {node.identifier}")
+                    return
             except Exception as e:
                 logging.exception(f"Failed to compute {node.identifier}")
                 node.on_compute_error()

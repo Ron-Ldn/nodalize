@@ -1,6 +1,6 @@
 """Dependency loading data over a window of dates."""
 from datetime import date, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from nodalize.calculators.calculator import Calculator
 from nodalize.constants import column_names
@@ -24,7 +24,7 @@ class WindowDependency(DependencyDefinition):
         end_day_offset: int = 0,
         *,
         filters: Optional[List[List[Tuple[str, str, Any]]]] = None,
-        data_fields: Optional[Dict[str, str]] = None,
+        data_fields: Optional[Union[Dict[str, str], List[str]]] = None,
     ) -> None:
         """
         Initialize.
@@ -35,7 +35,7 @@ class WindowDependency(DependencyDefinition):
             end_day_offset: offset (in days) to apply in order to compute the start date of the window
             filters: optional list of filters to apply when loading the data for the node
             data_fields: dictionary where the keys are the fields to load from the data node and the values are the name
-                to assign in the final data frame
+                to assign in the final data frame - can also be a simple list of columns to load
         """
         DependencyDefinition.__init__(
             self,

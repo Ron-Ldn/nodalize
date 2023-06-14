@@ -76,7 +76,7 @@ class EnrichedDataSet(DataNode):
     def compute(self, parameters, base_data):
         """Compute data."""
         df = base_data()  # "base_data" is a function returning the data frame on demand. It can be called asynchronously.
-        df = self.add(df, "Ratio", self.column(df, "Numerator") / self.column(df, "Denominator"))  # "add" is a built-in function abstracting the dataframe-based framework.
+        df = self.calculator.add_column(df, "Ratio", self.calculator.get_column(df, "Numerator") / self.calculator.get_column(df, "Denominator"))
         return df
 
 coordinator = Coordinator("myApplication", LocalFileDataManager("somelocation"))

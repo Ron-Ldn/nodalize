@@ -305,25 +305,6 @@ class PriceToEarnings(DataNode):
 Thus, "PriceToEarnings" depends on "CompanyData" and "EPS", but "EPS" also depends on "CompanyData".
 When asked to compute the 3 nodes together, Nodalize will build the dependency graph and compute the nodes each once and in the right order.
 
-Note: the "compute" function performs a join of 2 Pandas dataframes and is thus tightly bound to using Pandas. The DataNode class offers some built-in function to abstract such common treatments:
-- DataNode.column: returns the "column" object, which can then be used with basic operators
-- DataNode.add: to add the newly created column to the dataframe
-- DataNode.join: to join 2 dataframes together
-
-Then the "compute" function could be rewritten as
-
-```python
-    def compute(self, parameters, data, eps):
-        data = data()
-        eps = eps()
-        merged_data = self.join(data, eps, how="inner", on=("Ticker", "Ticker))
-        priceToEarnings = self.column(merged_data, "Close") / self.column(merged_data, "EPS")
-        merged_data = self.add(merged_data, "PriceToEarnings", priceToEarnings)
-        return merged_data
-```
-
-With such a definition, PriceToEarnings could be run using either PyArrow, Pandas, Dask, Polars or PySpark, without further code change.
-
 ## Step 4: define ranks using a template
 
 We want to attribute a rank to the companies for each ratio. This could be achieved using polymorphism again, but let us do it using a single generic class "Rank".

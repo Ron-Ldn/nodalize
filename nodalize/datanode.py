@@ -361,6 +361,9 @@ class DataNode:
         }
         data = self.compute(parameters, **dependency_loaders)
 
+        if data is None:
+            return None
+
         for parameter_column in self.get_column_names([ColumnCategory.PARAMETER]):
             if parameter_column in parameters:
                 parameter_value = parameters[parameter_column]

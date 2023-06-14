@@ -1,5 +1,5 @@
 """Class storing definition for a data node dependency."""
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from nodalize.calculators.calculator import Calculator
 from nodalize.constants.column_category import ColumnCategory
@@ -21,7 +21,7 @@ class DependencyDefinition:
         node_identifier: str,
         *,
         filters: Optional[List[List[Tuple[str, str, Any]]]] = None,
-        data_fields: Optional[Dict[str, str]] = None,
+        data_fields: Optional[Union[Dict[str, str], List[str]]] = None,
     ) -> None:
         """
         Initialize.
@@ -30,12 +30,16 @@ class DependencyDefinition:
             node_identifier: data node identifier
             filters: optional list of filters to apply when loading the data for the node
             data_fields: dictionary where the keys are the fields to load from the data node and the values are the name
-                to assign in the final data frame
+                to assign in the final data frame - can also be a simple list of columns to load
         """
         self._node_identifier = node_identifier
         self._node = None  # type: Any
         self._filters = filters or []
-        self._fields = data_fields
+
+        if isinstance(data_fields, list):
+            self._fields = {c: c for c in data_fields}  # type: Optional[Dict[str, str]]
+        else:
+            self._fields = data_fields
 
     @property
     def data_node_identifier(self) -> str:

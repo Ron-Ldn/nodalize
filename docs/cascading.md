@@ -33,13 +33,14 @@ class EquityPriceMove(DataNode):
     def compute(self, parameters, lagged_price, equity_price):
         lagged_price_df = lagged_price(ignore_deltas=True)  # Ignore delta updates and reload all
         equity_price_df = equity_price()  # By default, will load only the modified entities in the parent.
-        df = self.join(lagged_price_df, equity_price_df, on=["StockId", "DataDate"], how="inner")  # Inner join so only the securities in equity_price_df will remain.
 
-        return self.add(
+        df = pd.merge(lagged_price_df, equity_price_df, how="inner", on=["StockId", "DataDate"]) # Inner join so only the securities in equity_price_df will remain.
+
+        return self.calculator.add_column(
             df,
             "PriceMove",
-            (self.column(df, "Price") - self.column(df, "PrevPrice"))
-            / self.column(df, "PrevPrice"),
+            (self.calculator.get_column(df, "Price") - self.calculator.get_column(df, "PrevPrice"))
+            / self.calculator.get_column(df, "PrevPrice"),
         )
 
 coordinator.create_data_node(EquityPrice)

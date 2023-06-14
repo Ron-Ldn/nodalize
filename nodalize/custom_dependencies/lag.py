@@ -1,6 +1,6 @@
 """Dependency loading data with a lag."""
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -19,7 +19,7 @@ class LagDependency(DateDependency):
         day_lag: int,
         *,
         filters: Optional[List[List[Tuple[str, str, Any]]]] = None,
-        data_fields: Optional[Dict[str, str]] = None,
+        data_fields: Optional[Union[Dict[str, str], List[str]]] = None,
         lookback: Optional[int] = None
     ) -> None:
         """
@@ -30,7 +30,7 @@ class LagDependency(DateDependency):
             day_lag: lag (in days) to apply when loading the data
             filters: optional list of filters to apply when loading the data for the node
             data_fields: dictionary where the keys are the fields to load from the data node and the values are the name
-                to assign in the final data frame
+                to assign in the final data frame - can also be a simple list of columns to load
             lookback: lookback to apply when loading the data (default to node lookback)
         """
         DateDependency.__init__(

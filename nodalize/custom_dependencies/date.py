@@ -1,5 +1,5 @@
 """Dependency to a DataDate node."""
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from nodalize.calculators.calculator import Calculator
 from nodalize.constants import column_names
@@ -16,7 +16,7 @@ class DateDependency(DependencyDefinition):
         node_identifier: str,
         *,
         filters: Optional[List[List[Tuple[str, str, Any]]]] = None,
-        data_fields: Optional[Dict[str, str]] = None,
+        data_fields: Optional[Union[Dict[str, str], List[str]]] = None,
         lookback: Optional[int] = None,
         join_on_data_date: bool = True,
     ) -> None:
@@ -28,7 +28,7 @@ class DateDependency(DependencyDefinition):
             day_lag: lag (in days) to apply when loading the data
             filters: optional list of filters to apply when loading the data for the node
             data_fields: dictionary where the keys are the fields to load from the data node and the values are the name
-                to assign in the final data frame
+                to assign in the final data frame - can also be a simple list of columns to load
             lookback: lookback to apply when loading the data (default to node lookback)
             join_on_data_date: if True, then will add a join on DataDate=DataDate, if DataDate is not already used in
                 the joins

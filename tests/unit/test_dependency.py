@@ -34,3 +34,11 @@ class TestDependency(TestCase):
         self.assertEqual("DataNode1", dep.data_node_identifier)
         self.assertEqual([[("Col1", "=", 1.23), ("Col2", "=", 2.34)]], dep.filters)
         self.assertEqual({"Col1": "NewCol1", "Col2": "NewCol2"}, dep.fields)
+
+        dep = DependencyDefinition(
+            "DataNode1",
+            filters=[[("Col1", "=", 1.23), ("Col2", "=", 2.34)]],
+            data_fields=["Col1", "Col2"],
+        )
+
+        self.assertEqual({"Col1": "Col1", "Col2": "Col2"}, dep.fields)
