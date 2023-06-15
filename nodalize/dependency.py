@@ -6,6 +6,31 @@ from nodalize.constants.column_category import ColumnCategory
 from nodalize.data_management.data_manager import DataManager
 
 
+class ParameterValue:
+    """Class to store a parameter name, to use in a filter."""
+
+    __slots__ = "_parameter_name"
+
+    def __init__(self, parameter_name: str) -> None:
+        """
+        Initialize.
+
+        Args:
+            parameter_name: name of the parameter to use
+        """
+        self._parameter_name = parameter_name
+
+    @property
+    def parameter_name(self) -> str:
+        """
+        Get name of the parameter.
+
+        Returns:
+            name of the parameter
+        """
+        return self._parameter_name
+
+
 class DependencyDefinition:
     """Class storing definition for a data node dependency."""
 
@@ -129,7 +154,19 @@ class DependencyDefinition:
             data frame
         """
         if self.filters is not None and len(self.filters) > 0:
-            filters = self.filters
+            filters = [
+                [
+                    (
+                        filterDesc[0],
+                        filterDesc[1],
+                        parameters[filterDesc[2].parameter_name]
+                        if isinstance(filterDesc[2], ParameterValue)
+                        else filterDesc[2],
+                    )
+                    for filterDesc in andFilter
+                ]
+                for andFilter in self.filters
+            ]
         else:
             parameter_columns = set(
                 self.data_node.get_column_names([ColumnCategory.PARAMETER])

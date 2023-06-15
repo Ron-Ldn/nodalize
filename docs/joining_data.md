@@ -25,7 +25,7 @@ class EquityAdjustedPrice(DataNode):
             "fx_rate": DateDependency(
                 "FxRate",
                 data_fields={"Rate": "FxRate", "BaseCurrency": "BaseCurrency"},
-                filters=[[("PriceCurrency", "=", "USD")]],
+                filters=[[("PriceCurrency", "=", "USD"), ("DataDate", "=", ParameterValue("DataDate"))]],
             ),
         }
 
@@ -41,6 +41,8 @@ class EquityAdjustedPrice(DataNode):
 ## Example 2: using generic functions
 
 ```python
+from nodalize.dependency import ParameterValue
+
 class EquityAdjustedPrice(DataNode):
     def set_calculator_type(self, calc_type):
         """Set calculation framework."""
@@ -65,7 +67,7 @@ class EquityAdjustedPrice(DataNode):
             "fx_rate": DateDependency(
                 "FxRate",
                 data_fields={"Rate": "FxRate", "BaseCurrency": "Currency"},
-                filters=[[("PriceCurrency", "=", "USD")]],
+                filters=[[("PriceCurrency", "=", "USD"), ("DataDate", "=", ParameterValue("DataDate"))]],
             ),
         }
 

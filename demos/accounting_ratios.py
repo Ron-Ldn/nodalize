@@ -136,9 +136,7 @@ class AccountingRatio(DataNode):
         return {
             "data": DependencyDefinition(
                 "CompanyData",
-                data_fields={
-                    c: c for c in ["Ticker", self.numerator, self.denominator]
-                },
+                data_fields=["Ticker", self.numerator, self.denominator],
             )
         }
 
@@ -174,10 +172,10 @@ class PriceToEarnings(DataNode):
     def dependencies(self):
         return {
             "data": DependencyDefinition(
-                "CompanyData", data_fields={c: c for c in ["Ticker", "Close"]}
+                "CompanyData", data_fields=["Ticker", "Close"]
             ),
             "eps": DependencyDefinition(
-                "EPS", data_fields={c: c for c in ["Ticker", "EPS"]}
+                "EPS", data_fields=["Ticker", "EPS"]
             ),
         }
 

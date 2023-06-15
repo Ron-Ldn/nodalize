@@ -13,6 +13,7 @@ from nodalize.data_management.local_file_data_manager import LocalFileDataManage
 from nodalize.data_management.s3_file_data_manager import S3FileDataManager
 from nodalize.data_management.sqlite_data_manager import SqliteDataManager
 from nodalize.datanode import DataNode
+from nodalize.dependency import ParameterValue
 from nodalize.orchestration.coordinator import Coordinator
 from nodalize.tools.dates import unix_now
 from tests.common import (
@@ -85,9 +86,17 @@ class FxRate(DataNode):
             df["PriceCurrency"] = ["USD"]
             df["Rate"] = [0.82]
         else:
-            df["BaseCurrency"] = ["USD", "GBP", "EUR"]
-            df["PriceCurrency"] = ["USD", "USD", "USD"]
-            df["Rate"] = [1.0, 0.84, 0.98]
+            df[column_names.DATA_DATE] = [
+                date(2022, 1, 2),
+                date(2022, 1, 2),
+                date(2022, 1, 2),
+                date(2022, 1, 3),
+                date(2022, 1, 3),
+                date(2022, 1, 3),
+            ]
+            df["BaseCurrency"] = ["USD", "GBP", "EUR", "USD", "GBP", "EUR"]
+            df["PriceCurrency"] = ["USD", "USD", "USD", "USD", "USD", "USD"]
+            df["Rate"] = [1.0, 0.84, 0.98, 1.2, 0.80, 1.0]
         return df
 
 
@@ -113,7 +122,16 @@ class EquityAdjustedPrice(EquityStock):
             "fx_rate": DateDependency(
                 "FxRate",
                 data_fields={"Rate": "FxRate", "BaseCurrency": "Currency"},
-                filters=[[("PriceCurrency", "=", "USD")]],
+                filters=[
+                    [
+                        ("PriceCurrency", "=", "USD"),
+                        (
+                            column_names.DATA_DATE,
+                            "=",
+                            ParameterValue(column_names.DATA_DATE),
+                        ),
+                    ]
+                ],
             ),
         }
 
@@ -179,6 +197,7 @@ class TestColumnarWithJoin(TestCase):
         fx_rate_df[column_names.DATA_DATE] = pd.to_datetime(
             fx_rate_df[column_names.DATA_DATE]
         ).dt.date
+        fx_rate_df = fx_rate_df.loc[fx_rate_df[column_names.DATA_DATE] == date(2022, 1, 2)]
         equity_adjusted_price_df = load_from_table_as_pandas("EquityAdjustedPrice")
         equity_adjusted_price_df[column_names.DATA_DATE] = pd.to_datetime(
             equity_adjusted_price_df[column_names.DATA_DATE]

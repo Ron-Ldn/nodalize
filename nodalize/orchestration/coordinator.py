@@ -113,6 +113,39 @@ class Coordinator:
         """
         return self._cache.get_data_node(identifier)
 
+    def get_data_nodes(self) -> List[DataNode]:
+        """
+        Get all data nodes.
+
+        Returns:
+            list of ndoes
+        """
+        return list(self._cache._nodes.values())
+
+    def get_data_node_identifiers(self) -> List[str]:
+        """
+        Get all data node identifiers.
+
+        Returns:
+            list of identifiers
+        """
+        return list(self._cache._nodes.keys())
+
+    def get_dependency_graph_levels(
+        self, identifiers: Optional[List[str]] = None
+    ) -> List[List[DataNode]]:
+        """
+        Get levels of dependency graph as list of lists.
+
+        Args:
+            list of ids to load, if None then load everything
+
+        Returns:
+            list of levels, each level is a list of node identifiers
+        """
+        identifiers = identifiers or self.get_data_node_identifiers()
+        return self._cache.build_downstream_tree(identifiers).levels
+
     def set_up(self):
         """Set up all nodes."""
         self._cache.build_dependency_graph()

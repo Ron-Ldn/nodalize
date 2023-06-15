@@ -4,6 +4,7 @@ from nodalize.calculators.dask_calculator import DaskCalculator
 from nodalize.calculators.pandas_calculator import PandasCalculator
 from nodalize.calculators.pyarrow_calculator import PyarrowCalculator
 from nodalize.calculators.spark_calculator import SparkCalculator
+from nodalize.datanode import DataNode
 from nodalize.orchestration.coordinator import Coordinator
 
 
@@ -24,6 +25,59 @@ class TestCoordinator(TestCase):
         self.assertIsInstance(coordinator.get_calculator("myowncalc"), SparkCalculator)
 
         self.assertEqual(5, len(coordinator._calculator_factory._calculators))
+
+    def test_nodes(self):
+        class ParentNode(DataNode):
+            pass
+
+        class IntermediateNode1(DataNode):
+            @property
+            def dependencies(self):
+                return {"dep": "ParentNode"}
+
+        class IntermediateNode2(DataNode):
+            @property
+            def dependencies(self):
+                return {"dep": "ParentNode"}
+
+        class FinalNode(DataNode):
+            @property
+            def dependencies(self):
+                return {"dep1": "IntermediateNode1", "dep21": "IntermediateNode2"}
+
+        coordinator = Coordinator("somedb")
+        parentNode = coordinator.create_data_node(ParentNode)
+        intNode1 = coordinator.create_data_node(IntermediateNode1)
+        intNode2 = coordinator.create_data_node(IntermediateNode2)
+        finalNode = coordinator.create_data_node(FinalNode)
+        coordinator.set_up()
+
+        self.assertEqual(
+            ["FinalNode", "IntermediateNode1", "IntermediateNode2", "ParentNode"],
+            sorted(coordinator.get_data_node_identifiers()),
+        )
+
+        allNodes = coordinator.get_data_nodes()
+        self.assertEqual(4, len(allNodes))
+        self.assertIn(parentNode, allNodes)
+        self.assertIn(intNode1, allNodes)
+        self.assertIn(intNode2, allNodes)
+        self.assertIn(finalNode, allNodes)
+
+        levels = coordinator.get_dependency_graph_levels()
+        self.assertEqual(3, len(levels))
+        self.assertEqual([parentNode], levels[0])
+        self.assertEqual(2, len(levels[1]))
+        self.assertIn(intNode1, levels[1])
+        self.assertIn(intNode2, levels[1])
+        self.assertEqual([finalNode], levels[2])
+
+        levels = coordinator.get_dependency_graph_levels(
+            ["IntermediateNode2", "FinalNode"]
+        )
+        self.assertEqual(2, len(levels))
+        self.assertEqual([intNode2], levels[0])
+        self.assertEqual([finalNode], levels[1])
 
     def test_compute_and_save_single_node(self):
         class DummyDataManager:
