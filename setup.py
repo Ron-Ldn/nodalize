@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="nodalize",
-    version="1.0.0",
+    version="1.0.1",
     author="Ronan Mouquet",
     author_email="ronan.mouquet@gmail.com",
     description="Framework to organize data transformation flow.",
