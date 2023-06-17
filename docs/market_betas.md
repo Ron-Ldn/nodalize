@@ -9,7 +9,7 @@ This demo will show how to deal with time dependencies and time series.
 
 ## Disclaimer
 
-**The model and code below are for illustration only. We will not claim any kind of accuracy in the final data.**
+**The model and code below are for illustration only. We will not claim any kind of accuracy in the final model and data.**
 
 
 ## Imports
@@ -44,6 +44,7 @@ class PandasNode(ABC, DataNode):
 
     @property
     def value_columns(self):
+        """Define value columns to be added to the schema."""
         return {}
 
     @property
@@ -69,7 +70,7 @@ class Tickers(PandasNode):
 
 ## Step 2: import prices
 
-To compute the stock returns, we need the prices adjusted for dividend payments and stock splits. This is available through the Yahoo finance API and yfinance package as "Adj Close".
+To compute the stock returns, we need the prices adjusted for dividend payments and stock splits. This is available through the Yahoo finance API and *yfinance* package as "Adj Close".
 
 The default behaviour of our node will be to load the prices for the specified date. However, there will be a specific "backfill" mode to load and persist the prices for the past year. This "mode" is passed to the calculation via the "parameters" dictionary.
 
@@ -140,7 +141,7 @@ Our return node will have 2 dependencies:
 - current prices
 - lagged prices
 
-For the lagged prices, we can use the LagDependency class. By default, this class does not use any calendar, thus the lagged date may fall on a bank holiday or a weekend.
+For the lagged prices, we can use the *LagDependency* class. By default, this class does not use any calendar, thus the lagged date may fall on a bank holiday or a weekend.
 
 ```python
 class Return(PandasNode):
@@ -163,11 +164,11 @@ class Return(PandasNode):
 ```
 
 To look back to previous week days, we have 3 options:
-1. Use the "lookback" parameter of LagDependency, for example with the value 2. When the lagged date falls on a Sunday, the LagDependency will look for the latest available data within the previous 2 days. However, this approach would also make the LagDependency load previous data if the prices were simply missing on a week day for whatever reason.
+1. Use the "lookback" parameter of *LagDependency*, for example with the value 2. When the lagged date falls on a Sunday, the *LagDependency* will look for the latest available data within the previous 2 days. However, this approach would also make the *LagDependency* load previous data if the prices were simply missing on a week day for whatever reason.
 2. Use our own dependency class, implementing a calendar.
-3. Use the WeekDayLagDependency class: when a date was moved to a Saturday or Sunday, the class will shift the date to the previous Friday.
+3. Use the *WeekDayLagDependency* class: when a date was moved to a Saturday or Sunday, the class will shift the date to the previous Friday.
 
-To illustrate how to implement a custom LagDependency class, we will show the actual implementation of WeekDayLagDependency.
+To illustrate how to implement a custom *LagDependency* class, we will show the actual implementation of WeekDayLagDependency.
 
 ```python
 class WeekDayLagDependency(LagDependency):
@@ -191,7 +192,7 @@ class WeekDayLagDependency(LagDependency):
             return new_date
 ```
 
-It will be easy to integrate some calendar management: derive the LagDependency class, load the calendar from somewhere into the initializer, finally override the "offset_days" method.
+It will be easy to integrate some calendar management: derive the *LagDependency* class, load the calendar from somewhere into the initializer, finally override the "offset_days" method.
 
 ### Calculation cascading
 

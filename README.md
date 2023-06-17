@@ -1,9 +1,9 @@
 # Nodalize
-Nodalize is a flexible framework for Python projects to easily create and maintain data pipelines. The dependency orchestration is automated and all accesses to the data store are abstracted. The phylosophy is to make developers focus on their business logic.
+Nodalize is a flexible framework for Python projects to easily create and maintain data pipelines. The dependency orchestration is automated and all accesses to the data store are abstracted. Developers can focus on their business logic.
 
-Nodalize supports multiple data storage technologies and allows to easily plug customized ones.
+Nodalize supports multiple data storage technologies and allows to easily plug in bespoke ones.
 
-Finally, Nodalize handle multiple dataframe-based calculation frameworks, so that each pipeline can be built with the most convenient tool (Pandas, PySpark, etc.).
+Finally, Nodalize handle multiple dataframe-based calculation frameworks, so that each pipeline can be built with the most convenient tool (Pandas, Polars, PySpark, etc.).
 
 
 ## Illustration

@@ -4,7 +4,7 @@ When loading data for a specific date, the missing values may be replaced by the
 
 By default, the lookback will be applied to each entities in the data set. But it is also possible to have a grouped lookback: in that case, if there is no data at all for a date, then it will be substituted with all the data from the last available date.
 
-## Example 1 (Pandas): price to be defaulted to last available price for each security
+## Example 1 (Pandas): price to be defaulted to last available price for each security individually
 
 ```python
 class EquityPrice(DataNode):
@@ -24,7 +24,7 @@ class EquityPrice(DataNode):
         return 1
 
     def compute(self, parameters, price):
-        ...   # load from some source
+        ...   # load/compute/return
 
 class EquityPriceLookback1(EquityStock):
     @property
@@ -40,10 +40,11 @@ class EquityPriceLookback1(EquityStock):
 
     @property
     def dependencies(self):
-        return {"EquityPrice": None}  # Will use the default lookback of 1 day
+        return {"EquityPrice": None}  # Will use the default lookback of 1 day, as defined in the EquityPrice class
 
-    # Note: if there is 1 and only 1 dependency abd no further transformation to apply to it,
+    # Note: if there is 1 and only 1 dependency and no further transformation to apply to it,
     # then it is not necessary to override the "compute" function.
+    # The data from the dependency will be saved as is.
 
 
 class EquityPriceLookback2(EquityStock):
@@ -63,7 +64,9 @@ class EquityPriceLookback2(EquityStock):
         return {"EquityPrice": DateDependency("EquityPrice", lookback=2)}  # Will override the lookback defined in the EquityPrice class
 ```
 
-## Example 2 (Pandas): use yesterday's prices if today's prices are not available.
+## Example 2 (Pandas): use all T-1 prices if T prices are not available.
+
+Achievable by overriding the "group_lookback" property.
 
 ```python
 class EquityPrice(DataNode):
@@ -84,10 +87,10 @@ class EquityPrice(DataNode):
 
     @property
     def group_lookback(self):
-        return True
+        return True  # group_lookback is False by default
 
     def compute(self, parameters, price):
-        ...   # load from some source
+        ...   # load/compute/return
 
 class EquityPriceLookback(EquityStock):
     @property
@@ -104,7 +107,4 @@ class EquityPriceLookback(EquityStock):
     @property
     def dependencies(self):
         return {"EquityPrice": None}  # Will use the default lookback of 1 day
-
-    # Note: if there is 1 and only 1 dependency abd no further transformation to apply to it,
-    # then it is not necessary to override the "compute" function.
 ```

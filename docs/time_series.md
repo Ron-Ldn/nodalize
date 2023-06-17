@@ -1,7 +1,8 @@
 # Working with time series
 
-It is possible to specify a dependency to a time series using the WindowDependency class.
-The integer parameters represent the offsets from the current date, to get the start and end date.
+It is possible to specify a dependency to a time series using the *WindowDependency* class. The integer parameters represent the offsets from the current date, to get the start and end date.
+
+When computing recursively (*Coordinator.run_recursively*), *WindowDependency* will ignore temporal dependencies. Let's take the example below, where *EquityPriceAverage* calculated on date T will depend on a year of data from *EquityPrice*. An update of *EquityPrice* for date T will only update *EquityPriceAverage* for date T (instead of updating a year forward).
 
 ## Example: using plain Pandas
 
@@ -22,7 +23,7 @@ class EquityPriceAverage(DataNode):
 
     @property
     def dependencies(self):
-        return {"price": WindowDependency("EquityPrice", -2, 0)}  # will populate all data from 2 days ago until today.
+        return {"price": WindowDependency("EquityPrice", -365, 0)}  # will populate all data from 365 days ago until today.
 
     def compute(self, parameters, price):
         df = price()

@@ -7,7 +7,7 @@ Several data stores are supported already:
 - KDB
 - Sqlite
 
-It is possible to add a custom data store by implementing a new data manager. The new class must inherit from nodalize.data_management.data_manager.DataManager and define 2 functions: load_data_frame and save_updates.
+It is possible to add a bespoke data store by implementing a new data manager. The new class must inherit from *nodalize.data_management.data_manager.DataManager* and define 2 functions: *load_data_frame* and *save_updates*.
 
 
 ```python
@@ -66,12 +66,34 @@ class MyCustomDataManager(DataManager):
         ...
 ```
 
-Note: the new class may not need to support all implementations of Calculator, but only those calculators actually used. For instance, if only Pandas is used for the process, then there is no need to support Polars or PySpark, etc.
+Note: the new class may not need to support all implementations of Calculator. For instance, if only Pandas is used for the process, then there is no need to support Polars or PySpark, etc.
 
-To use the custom data manager, simply pass it as argument of the Coordinator.
+To use the custom data manager, an instance must be passed to the *set_data_manager* method of the Coordinator.
 
 ```python
-coordinator = Coordinator("test", my_custom_data_manager_instance)
+coordinator = Coordinator("test")
+coordinator.set_data_manager("datastore1",  MyDataManager1(), default=True)
+```
+
+It is possible to define multiple data managers. The DataNode class contains a property called *data_manager_type*. If it returns None, then the default data manager will be used. But it could instead return the name of a specific manager.
+
+```python
+coordinator = Coordinator("test")
+coordinator.set_data_manager("datastore1",  MyDataManager1(), default=True)
+coordinator.set_data_manager("datastore2",  MyDataManager2())
+coordinator.set_data_manager("datastore3",  MyDataManager3())
+
+
+class MyNode1(DataNode):
+    @property
+    def data_manager_type(self):
+        return None  # Will use MyDataManager1
+
+
+class MyNode2(DataNode):
+    @property
+    def data_manager_type(self):
+        return "datastore2"  # Will use MyDataManager2
 ```
 
 

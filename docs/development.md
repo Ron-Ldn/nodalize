@@ -6,7 +6,9 @@ At the moment, all tests are performed under a Ubuntu subsystem of Windows 11. T
 
 ## Package dependencies
 
-Only Pandas and PyArrow are core dependencies of the final package. Other dependencies such as PySpark, Polars, KDB, etc. must be soft: the package must be importable and runnable without them, as long as these calculators or data managers are not used.
+Only Pandas is a core dependency of the final package. Other dependencies such as PyArrow, PySpark, Polars, KDB, etc. must be soft: the package must be importable and runnable without them, as long as these calculators or data managers are not used.
+
+The dependency to Pandas is not enforced in *setup.py* because the version required depends on the final usage. We expect the users to just try the feature and see if that is compatible with their needs.
 
 ## Virtual environment
 
@@ -24,7 +26,7 @@ Various code quality tools are used and must be run before making a pull request
 - isort tests
 - black tests
 
-__Unit and integration tests must run and pass__, apart from those already failing. We have some known issues inherent to the underlying packages. For instances, at the time of writing, Polars does not support Hive partitioning.
+__Unit and integration tests must run and pass__, apart from those already failing and having an issue in GitHub againt them. We have some known issues inherent to the underlying packages. For instances, at the time of writing, Polars does not support Hive partitioning.
 
 __All new code must be thoroughly covered by unit and integration tests.__
 

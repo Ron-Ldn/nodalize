@@ -36,6 +36,8 @@ class MyCustomCalculator(Calculator[T]):  # T is the type of data frame (ex: pan
     ) -> Optional[T]:
         """
         Load data frame from parquet files.
+        
+        Only needed if the data store relies on parquet format.
 
         Args:
             file_paths: paths to the files
@@ -57,6 +59,8 @@ class MyCustomCalculator(Calculator[T]):  # T is the type of data frame (ex: pan
     ) -> None:
         """
         Save data frame as parquet file.
+        
+        Only needed if the data store relies on parquet format.
 
         Args:
             file_path: path to the file
@@ -70,6 +74,8 @@ class MyCustomCalculator(Calculator[T]):  # T is the type of data frame (ex: pan
         """
         Convert from pandas data frame to target data frame type.
 
+        Useful for generic, automated tests, and for datastores that can only work with Pandas (ex: KDB using QPython3).
+
         Args:
             dataframe: pandas data frame
 
@@ -81,6 +87,8 @@ class MyCustomCalculator(Calculator[T]):  # T is the type of data frame (ex: pan
     def to_pandas(self, dataframe: T) -> pd.DataFrame:
         """
         Convert to pandas data frame.
+
+        Useful for generic, automated tests, and for datastores that can only work with Pandas (ex: KDB using QPython3).
 
         Args:
             dataframe: data frame (actual class type depends on type of calculator)
@@ -260,7 +268,7 @@ class MyCustomCalculator(Calculator[T]):  # T is the type of data frame (ex: pan
         self, left: T, right: T, on: List[str]
     ) -> T:
         """
-        Join 2 data frames.
+        Left join 2 data frames.
 
         Args:
             left: left data frame

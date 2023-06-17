@@ -1,6 +1,8 @@
 # Cascading calculations
 
-By default, delta updates will be propagated to downstream nodes, avoiding full recalculations.
+When using *Coordinator.run_recursively*, delta updates will be propagated to downstream nodes. In that way, the downstream calculations won't need to reload everything, and the only the deltas will propagate.
+
+However, some calculations cannot work from delta updates only. As an examples, a ranking calculation would need all upstream data, not only those impacted by some event.
 It is possible to force loading all data using the parameters "ignore_deltas".
 
 ## Example:
@@ -32,7 +34,7 @@ class EquityPriceMove(DataNode):
 
     def compute(self, parameters, lagged_price, equity_price):
         lagged_price_df = lagged_price(ignore_deltas=True)  # Ignore delta updates and reload all
-        equity_price_df = equity_price()  # By default, will load only the modified entities in the parent.
+        equity_price_df = equity_price()  # By default, will load only the entities run_recursively by the parent.
 
         df = pd.merge(lagged_price_df, equity_price_df, how="inner", on=["StockId", "DataDate"]) # Inner join so only the securities in equity_price_df will remain.
 
