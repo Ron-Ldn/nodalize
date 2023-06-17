@@ -133,6 +133,13 @@ More types of data storage will be added over time. Users of Nodalize can add th
 
 [Cascading calculations](docs/cascading.md)
 
+[Retry and fallback](docs/retry_fallback.md)
+
+## API
+[Compute nodes](docs/compute.md)
+
+[Define node](docs/node.md)
+
 ## Customization
 [Manage your own data store](docs/custom_data_manager.md)
 
