@@ -8,6 +8,7 @@ from nodalize.constants import column_names
 from nodalize.constants.column_category import ColumnCategory
 from nodalize.custom_dependencies.date import DateDependency
 from nodalize.data_management.delta_lake_data_manager import DeltaLakeDataManager
+from nodalize.data_management.duckdb_data_manager import DuckdbDataManager
 from nodalize.data_management.local_file_data_manager import LocalFileDataManager
 from nodalize.data_management.s3_file_data_manager import S3FileDataManager
 from nodalize.data_management.sqlite_data_manager import SqliteDataManager
@@ -1058,4 +1059,124 @@ class TestLookback(TestCase):
     def test_polars_no_key_and_group_lookback_s3(self):
         self.run_test_no_key_and_group_lookback(
             "polars", S3FileDataManager(self.s3_bucket, self.s3_folder)
+        )
+
+    @use_temp_folder
+    def test_pandas_individual_lookback_duckdb(self):
+        self.run_test_individual_lookback(
+            "pandas", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_dask_individual_lookback_duckdb(self):
+        self.run_test_individual_lookback(
+            "dask", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_spark_individual_lookback_duckdb(self):
+        self.run_test_individual_lookback(
+            "spark", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pyarrow_individual_lookback_duckdb(self):
+        self.run_test_individual_lookback(
+            "pyarrow", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_polars_individual_lookback_duckdb(self):
+        self.run_test_individual_lookback(
+            "polars", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pandas_group_lookback_duckdb(self):
+        self.run_test_group_lookback(
+            "pandas", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_dask_group_lookback_duckdb(self):
+        self.run_test_group_lookback(
+            "dask", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_spark_group_lookback_duckdb(self):
+        self.run_test_group_lookback(
+            "spark", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pyarrow_group_lookback_duckdb(self):
+        self.run_test_group_lookback(
+            "pyarrow", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_polars_group_lookback_duckdb(self):
+        self.run_test_group_lookback(
+            "polars", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pandas_no_key_duckdb(self):
+        self.run_test_no_key(
+            "pandas", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_dask_no_key_duckdb(self):
+        self.run_test_no_key(
+            "dask", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_spark_no_key_duckdb(self):
+        self.run_test_no_key(
+            "spark", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pyarrow_no_key_duckdb(self):
+        self.run_test_no_key(
+            "pyarrow", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_polars_no_key_duckdb(self):
+        self.run_test_no_key(
+            "polars", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pandas_no_key_and_group_lookback_duckdb(self):
+        self.run_test_no_key_and_group_lookback(
+            "pandas", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_dask_no_key_and_group_lookback_duckdb(self):
+        self.run_test_no_key_and_group_lookback(
+            "dask", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_spark_no_key_and_group_lookback_duckdb(self):
+        self.run_test_no_key_and_group_lookback(
+            "spark", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pyarrow_no_key_and_group_lookback_duckdb(self):
+        self.run_test_no_key_and_group_lookback(
+            "pyarrow", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_polars_no_key_and_group_lookback_duckdb(self):
+        self.run_test_no_key_and_group_lookback(
+            "polars", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
         )

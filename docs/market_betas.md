@@ -34,14 +34,10 @@ from nodalize.orchestration.coordinator import Coordinator
 
 ## Step 0: common base class
 
-Because we don't like to repeat ourselves, we will create an abstract base class to define the common calculator (Pandas) and the common key columns.
+Because we don't like to repeat ourselves, we will create an abstract base class to define the common key columns.
 
 ```python
 class PandasNode(ABC, DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def value_columns(self):
         """Define value columns to be added to the schema."""
@@ -116,6 +112,7 @@ We can then load and persist the prices for the 365 days using such code:
 ```python
 coordinator = Coordinator("test")
 coordinator.set_data_manager("kdb", KdbDataManager(None, "localhost", 5000, lambda: (None, None)), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(AdjustedPriceClose)
 coordinator.set_up()
@@ -201,6 +198,7 @@ To generate prices and returns, we can run the following code.
 ```python
 coordinator = Coordinator("test")
 coordinator.set_data_manager("kdb", KdbDataManager(None, "localhost", 5000, lambda: (None, None)), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(AdjustedPriceClose)
 coordinator.create_data_node(Return)
@@ -249,6 +247,7 @@ class Return(PandasNode):
 
 coordinator = Coordinator("test")
 coordinator.set_data_manager("kdb", KdbDataManager(None, "localhost", 5000, lambda: (None, None)), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(AdjustedPriceClose)
 coordinator.create_data_node(Return)
@@ -375,10 +374,6 @@ from nodalize.orchestration.coordinator import Coordinator
 
 class PandasNode(ABC, DataNode):
     @property
-    def calculator_type(self):
-        return "pandas"
-
-    @property
     def value_columns(self):
         return {}
 
@@ -492,6 +487,7 @@ class Beta(PandasNode):
 
 coordinator = Coordinator("test")
 coordinator.set_data_manager("kdb", KdbDataManager(None, "localhost", 5000, lambda: (None, None)), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(AdjustedPriceClose)
 coordinator.create_data_node(Return)

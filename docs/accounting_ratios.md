@@ -80,10 +80,6 @@ In the "compute" function, the "tickers" parameter will be a lambda function to 
 ```python
 class CompanyData(DataNode):
     @property
-    def calculator_type(self):
-        return "pandas"
-
-    @property
     def schema(self):
         return {
             "Ticker": (str, ColumnCategory.KEY),
@@ -160,6 +156,7 @@ The code below will run "Tickers" first, then "CompanyData".
 ```python
 coordinator = Coordinator("Demo")
 coordinator.set_data_manager("sqlite", SqliteDataManager("TestDb/test.db"), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.CompanyData(Tickers)
 coordinator.set_up()
@@ -176,10 +173,6 @@ Note: within "dependencies" this is not the raw node name that we use but the De
 
 ```python
 class AccountingRatio(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def numerator(self):
         raise NotImplementedError
@@ -314,10 +307,6 @@ By default, the node identifier is inferred from the class name, but this can be
 
 ```python
 class Rank(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     def __init__(self, calculator_factory, data_manager_factory, ratio_name, **kwargs):
         self._ratio_name = ratio_name
         super().__init__(data_manager, calculator_factory, data_manager_factory, **kwargs)
@@ -363,6 +352,7 @@ We know how to register all these nodes and compute recursively. The instance of
 ```python
 coordinator = Coordinator("test")
 coordinator.set_data_manager("sqlite", SqliteDataManager("TestDb/test.db"), default=True)
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(CompanyData)
 coordinator.create_data_node(EPS)
@@ -400,10 +390,6 @@ Here is the new definition for "PriceToEarnings".
 
 ```python
 class PriceToEarnings(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def schema(self):
         return {
@@ -512,10 +498,6 @@ class Tickers(DataNode):
 
 class CompanyData(DataNode):
     @property
-    def calculator_type(self):
-        return "pandas"
-
-    @property
     def schema(self):
         return {
             "Ticker": (str, ColumnCategory.KEY),
@@ -587,10 +569,6 @@ class CompanyData(DataNode):
 
 
 class AccountingRatio(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def numerator(self):
         raise NotImplementedError
@@ -703,10 +681,6 @@ class PriceToBook(AccountingRatio):
 
 
 class Rank(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     def __init__(self, calculator_factory, data_manager_factory, ratio_name, **kwargs):
         self._ratio_name = ratio_name
         super().__init__(calculator_factory, data_manager_factory, **kwargs)
@@ -739,6 +713,7 @@ coordinator = Coordinator("test")
 coordinator.set_data_manager(
     "sqlite", SqliteDataManager("TestDb/test.db"), default=True
 )
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(CompanyData)
 coordinator.create_data_node(EPS)

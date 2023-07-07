@@ -1,35 +1,30 @@
-"""Data manager leveraging Delta Lake."""
+"""Data manager leveraging KDB."""
 import logging
 import os
-import sqlite3
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import duckdb
 import numpy as np
-import pandas as pd
 
 from nodalize.calculators.calculator import Calculator
 from nodalize.constants import column_names
 from nodalize.constants.column_category import ColumnCategory
 from nodalize.constants.custom_types import Symbol
 from nodalize.data_management.database_data_manager import DatabaseDataManager
-from nodalize.tools.dates import (
-    datetime_series_to_unix,
-    to_unix,
-    unix_series_to_datetime,
-)
 from nodalize.tools.static_func_tools import generate_random_name
 
 
-class SqliteDataManager(DatabaseDataManager):
-    """Data manager leveraging Delta Lake."""
+class DuckdbDataManager(DatabaseDataManager):
+    """Data manager leveraging Duckdb."""
 
-    def __init__(self, location: str) -> None:
+    def __init__(self, location: str, schema: Optional[str] = None) -> None:
         """
         Initialize.
 
         Args:
             location: location of data base
+            schema: optional schema to use
         """
         self._location = location
 
@@ -38,20 +33,28 @@ class SqliteDataManager(DatabaseDataManager):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-    def _execute_query(self, query: str) -> List[Any]:
+        self.execute_query(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+        self._schema_prefix = "" if schema is None else f"{schema}."
+
+    def execute_query(
+        self, query: str, conn: Optional[duckdb.DuckDBPyConnection] = None
+    ) -> Any:
         """
-        Execute query against Sqlite database.
+        Execute query.
 
         Args:
-            query: SQL query
+            query: query to execute
 
         Returns:
-            list of recordsets
+            any output
         """
-        logging.info(f"Running Sqlite query: {query}")
-        with sqlite3.connect(self._location) as conn:
-            cur = conn.cursor()
-            return cur.execute(query).fetchall()
+        logging.info(f"Running  query: {query}")
+
+        if conn is not None:
+            return conn.sql(query)
+        else:
+            with duckdb.connect(self._location) as conn:
+                return conn.sql(query)
 
     def table_exists(self, table_name: str) -> bool:
         """
@@ -63,76 +66,64 @@ class SqliteDataManager(DatabaseDataManager):
         Returns:
             True if table exists
         """
-        query = (
-            f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}'"
-        )
-        ret = self._execute_query(query)
-        if len(ret) == 0:
+        try:
+            self.execute_query(f"DESCRIBE {self._schema_prefix}{table_name}")
+        except duckdb.CatalogException:
             return False
-        elif len(ret) == 1 and len(ret[0]) == 1 and ret[0][0] == table_name:
-            return True
         else:
-            raise AssertionError(f"Unexpected response from sqlite: {ret}")
+            return True
 
-    def _convert_type_for_sqlite(self, t: type) -> str:
+    def _convert_type_to_duckdb(self, t: type) -> str:
         """
-        Convert from Python type to sqlite type as str.
+        Convert python type to duckdb declaration.
 
         Args:
-            t: Python type
+            t: python type
 
         Returns:
-            sqlite type declaration
+            kdb type as string
         """
         if t == int:
-            return "INTEGER"
+            return "BIGINT"
         elif t == float:
-            return "REAL"
+            return "DOUBLE"
         elif t == str:
-            return "TEXT"
+            return "VARCHAR"
         elif t == bool:
-            return "INTEGER"
+            return "BOOLEAN"
         elif t == date:
-            return "INTEGER"  # unix format
+            return "DATE"
         elif t == datetime:
-            return "INTEGER"  # unix format
+            return "TIMESTAMP"
         elif t == Symbol:
-            return "TEXT"
+            return "VARCHAR"
         else:
-            raise NotImplementedError(f"Type not supported for Sqlite: {t}")
+            raise NotImplementedError(f"Type not supported for duckdb: {t}")
 
-    def _convert_from_sqlite_type_to_python(self, t: str) -> type:
+    def _convert_type_from_duckdb(self, t: str) -> type:
         """
-        Convert sqlite type to Python type.
+        Convert python type to duckdb declaration.
 
         Args:
-            t: sqlite type as str
+            t: python type
 
         Returns:
-            Python type
+            kdb type as string
         """
-        if t == "INTEGER":
+        if t == "BIGINT":
             return int
-        elif t == "REAL":
+        elif t == "DOUBLE":
             return float
-        elif t == "TEXT":
+        elif t == "VARCHAR":
             return str
+        elif t == "BOOLEAN":
+            return bool
+        elif t == "DATE":
+            return date
+        elif t == "TIMESTAMP":
+            return datetime
         else:
-            raise NotImplementedError(f"Type not supported from Sqlite: {t}")
-
-    def _create_column_declaration(self, column_name: str, t: type) -> str:
-        """
-        Create column declaration statement for CREATE TABLE.
-
-        Args:
-            column_name: column header
-            t: column type
-
-        Returns:
-            SQL declaration
-        """
-        tp = self._convert_type_for_sqlite(t)
-        return f"[{column_name}] {tp}"
+            raise NotImplementedError(f"Type not supported from duckdb: {t}")
 
     def create_table(
         self,
@@ -148,18 +139,25 @@ class SqliteDataManager(DatabaseDataManager):
             schema: schema of the table
             partitioning: optional list of partitioning columns
         """
-        column_declarations = [
-            self._create_column_declaration(col, tp) for col, (tp, _) in schema.items()
+        columns = [
+            f"{c} {self._convert_type_to_duckdb(tp)}" for c, (tp, cat) in schema.items()
         ]
-        column_declarations_sql = ", ".join(column_declarations)
-        query = f"CREATE TABLE [{table_name}]({column_declarations_sql})"
-        self._execute_query(query)
+        columns_decl = ",".join(columns)
 
-        if partitioning is not None and len(partitioning) > 0:
-            partition_cols = ",".join(partitioning)
-            index_name = generate_random_name(10)
-            query = f"CREATE INDEX [{index_name}] ON [{table_name}]({partition_cols})"
-            self._execute_query(query)
+        if any(_ for _, (_, cat) in schema.items() if cat in [ColumnCategory.KEY]):
+            keys = [
+                c
+                for c, (_, cat) in schema.items()
+                if cat in [ColumnCategory.KEY, ColumnCategory.PARAMETER]
+            ] + [column_names.INSERTED_DATETIME]
+            pk_decl = f", PRIMARY KEY({','.join(keys)})"
+        else:
+            pk_decl = ""
+
+        query = (
+            f"CREATE TABLE {self._schema_prefix}{table_name}({columns_decl}{pk_decl});"
+        )
+        self.execute_query(query)
 
     def check_table_schema(
         self, table_name: str, schema: Dict[str, Tuple[type, ColumnCategory]]
@@ -174,32 +172,50 @@ class SqliteDataManager(DatabaseDataManager):
         Returns:
             columns missing from the schema
         """
-        ret = self._execute_query(f"PRAGMA TABLE_INFO('{table_name}')")
+        columns_found = {}
 
-        new_columns = set(schema.keys())
-        missing_columns = {}
-        for record in ret:
-            column = record[1]
-            tp = record[2]
+        with duckdb.connect(self._location) as conn:
+            for row_desc in self.execute_query(
+                f"DESCRIBE {self._schema_prefix}{table_name}", conn
+            ).fetchall():
+                col_name = row_desc[0]
+                tp = row_desc[1]
+                pk = row_desc[3] == "PRI"
 
-            expected_col_schema = schema.get(column)
-            if expected_col_schema is None:
-                missing_columns[column] = self._convert_from_sqlite_type_to_python(tp)
-            else:
-                new_columns.remove(column)
+                python_type = self._convert_type_from_duckdb(tp)
+                columns_found[col_name] = python_type
 
-                expected_tp = self._convert_type_for_sqlite(expected_col_schema[0])
-                if expected_tp != tp:
-                    raise AssertionError(
-                        f"Type mismatch found for column {table_name}.{column}: sqlite={tp} whilst schema={expected_tp}"
-                    )
+                expected_schema = schema.get(col_name)
 
-        if len(new_columns) > 0:
+                if expected_schema is not None:
+                    if tp != self._convert_type_to_duckdb(expected_schema[0]):
+                        raise AssertionError(
+                            f"Type mismatch found for column {table_name}.{col_name}: "
+                            f"duckdb={python_type} whilst schema={expected_schema[0]}"
+                        )
+                    if (
+                        pk
+                        and expected_schema[1]
+                        not in [ColumnCategory.KEY, ColumnCategory.PARAMETER]
+                        and col_name != column_names.INSERTED_DATETIME
+                    ):
+                        raise AssertionError(
+                            f"Type mismatch found for column {table_name}.{col_name}: "
+                            "primary key in duckdb but not in schema"
+                        )
+                    elif not pk and expected_schema[1] == ColumnCategory.KEY:
+                        raise AssertionError(
+                            f"Type mismatch found for column {table_name}.{col_name}: "
+                            "primary key in schema but not in duckdb"
+                        )
+
+        added = [k for k in schema.keys() if k not in columns_found.keys()]
+        if any(added):
             raise AssertionError(
-                f"Columns in schema are missing in {table_name}: {list(new_columns)}"
+                f"Columns in schema are missing in {table_name}: {added}"
             )
 
-        return missing_columns
+        return {k: tp for k, tp in columns_found.items() if k not in schema.keys()}
 
     @staticmethod
     def _convert_value(t: type, v: Any) -> str:
@@ -230,10 +246,12 @@ class SqliteDataManager(DatabaseDataManager):
             return f"'{v}'"
         elif t == bool:
             return "1" if v else "0"
-        elif t in [date, datetime]:
-            return str(to_unix(v))
+        elif t == date:
+            return f"'{v.strftime('%Y-%m-%d')}'"
+        elif t == datetime:
+            return f"'{v.strftime('%Y-%m-%d %H:%M:%S')}'"
         else:
-            raise NotImplementedError(f"Type not supported for sqlite: {t}")
+            raise NotImplementedError(f"Type not supported for duckdb: {t}")
 
     def _convert_filter(
         self,
@@ -374,44 +392,46 @@ class SqliteDataManager(DatabaseDataManager):
         else:
             sql_filter = ""
 
-        max_datetime_col_name = generate_random_name(10)
+        max_datetime_col_name = "t" + generate_random_name(10)
 
         joins = [f"A.{col}=B.{col}" for col in key_columns]
         joins.append(f"A.{column_names.INSERTED_DATETIME}=B.{max_datetime_col_name}")
         joins_list = " AND ".join(joins)
 
-        cte_name = generate_random_name(10)
+        cte_name = "t" + generate_random_name(10)
 
         query = f"""
-WITH [{cte_name}] AS (
+WITH {cte_name} AS (
     SELECT {key_columns_list}, MAX({column_names.INSERTED_DATETIME}) AS {max_datetime_col_name}
-    FROM [{table_name}]
+    FROM {self._schema_prefix}{table_name}
     GROUP BY {key_columns_list}
 )
 SELECT {column_list}
-FROM [{table_name}] A
-INNER JOIN [{cte_name}] B on {joins_list}
+FROM {self._schema_prefix}{table_name} A
+INNER JOIN {cte_name} B on {joins_list}
 {sql_filter}
 """
 
-        logging.info(f"Running Sqlite query: {query}")
-        with sqlite3.connect(self._location) as conn:
-            pdf = pd.read_sql_query(query, conn)
+        with duckdb.connect(self._location) as conn:
+            ret = self.execute_query(query, conn)
 
-        for col, (tp, _) in schema.items():
-            if col not in pdf.columns:
-                continue
+            if calculator.calc_type == "pandas":
+                return ret.df()
+            elif calculator.calc_type == "polars":
+                return ret.pl()
+            elif calculator.calc_type == "pyarrow":
+                return ret.arrow()
+            else:
+                pdf = ret.df()
 
-            if tp in [date, datetime]:
-                pdf[col] = unix_series_to_datetime(pdf[col])
-            elif tp == float:
-                pdf[col] = pdf[col].astype(np.float64)
-            elif tp == int:
-                pdf[col] = pdf[col].astype(np.int64)
-            elif tp == bool:
-                pdf[col] = pdf[col].astype(np.bool_)
+                for col, (tp, _) in schema.items():
+                    if col not in pdf.columns:
+                        continue
 
-        return calculator.from_pandas(pdf)
+                    if tp in [date, datetime]:
+                        pdf[col] = pdf[col].dt.to_pydatetime()
+
+                return calculator.from_pandas(pdf)
 
     def load_data_frame_from_query(
         self,
@@ -430,23 +450,17 @@ INNER JOIN [{cte_name}] B on {joins_list}
         Returns:
             Any: custom query
         """
-        with sqlite3.connect(self._location) as conn:
-            pdf = pd.read_sql_query(query, conn)
+        ret = self.execute_query(query)
 
-        for col, tp in schema.items():
-            if col not in pdf.columns:
-                continue
-
-            if tp in [date, datetime]:
-                pdf[col] = unix_series_to_datetime(pdf[col])
-            elif tp == float:
-                pdf[col] = pdf[col].astype(np.float64)
-            elif tp == int:
-                pdf[col] = pdf[col].astype(np.int64)
-            elif tp == bool:
-                pdf[col] = pdf[col].astype(np.bool_)
-
-        return calculator.from_pandas(pdf)
+        if calculator.calc_type == "pandas":
+            return ret.df()
+        elif calculator.calc_type == "polars":
+            return ret.pl()
+        elif calculator.calc_type == "pyarrow":
+            return ret.arrow()
+        else:
+            pandas_df = ret.df()
+            return calculator.from_pandas(pandas_df)
 
     def add_data_to_table(
         self,
@@ -466,33 +480,19 @@ INNER JOIN [{cte_name}] B on {joins_list}
             missing_columns: columns from the table which are not in the data (to be defaulted)
             data: data frame
         """
-        pdf = calculator.to_pandas(data)
-        dtCols = [
-            col
-            for col, (tp, _) in schema.items()
-            if tp in [date, datetime] and col in pdf.columns
-        ]
-        if any(dtCols):
-            pdf = pdf.copy()
-            for dtCol in dtCols:
-                pdf[dtCol] = datetime_series_to_unix(pdf[dtCol])
-
-        temp_table_name = generate_random_name(10)
+        if calculator.calc_type in ["pandas", "pyarrow"]:
+            df_name = "data"
+        else:
+            pdf = calculator.to_pandas(data)  # noqa: F841
+            df_name = "pdf"
 
         columns = list(schema.keys())
         columns_list = ", ".join(columns)
 
         insert_query = f"""
-INSERT INTO [{table_name}] ({columns_list})
+INSERT INTO {self._schema_prefix}{table_name} ({columns_list})
 SELECT {columns_list}
-FROM [{temp_table_name}]
+FROM {df_name}
 """
 
-        self._execute_query(f"DROP TABLE IF EXISTS [{temp_table_name}]")
-
-        try:
-            with sqlite3.connect(self._location) as conn:
-                pdf.to_sql(temp_table_name, conn, if_exists="replace")
-                conn.cursor().execute(insert_query)
-        finally:
-            self._execute_query(f"DROP TABLE IF EXISTS [{temp_table_name}]")
+        self.execute_query(insert_query)

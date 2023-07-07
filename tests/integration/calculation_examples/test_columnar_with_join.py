@@ -9,6 +9,7 @@ from nodalize.constants import column_names
 from nodalize.constants.column_category import ColumnCategory
 from nodalize.custom_dependencies.date import DateDependency
 from nodalize.data_management.delta_lake_data_manager import DeltaLakeDataManager
+from nodalize.data_management.duckdb_data_manager import DuckdbDataManager
 from nodalize.data_management.local_file_data_manager import LocalFileDataManager
 from nodalize.data_management.s3_file_data_manager import S3FileDataManager
 from nodalize.data_management.sqlite_data_manager import SqliteDataManager
@@ -197,7 +198,9 @@ class TestColumnarWithJoin(TestCase):
         fx_rate_df[column_names.DATA_DATE] = pd.to_datetime(
             fx_rate_df[column_names.DATA_DATE]
         ).dt.date
-        fx_rate_df = fx_rate_df.loc[fx_rate_df[column_names.DATA_DATE] == date(2022, 1, 2)]
+        fx_rate_df = fx_rate_df.loc[
+            fx_rate_df[column_names.DATA_DATE] == date(2022, 1, 2)
+        ]
         equity_adjusted_price_df = load_from_table_as_pandas("EquityAdjustedPrice")
         equity_adjusted_price_df[column_names.DATA_DATE] = pd.to_datetime(
             equity_adjusted_price_df[column_names.DATA_DATE]
@@ -464,3 +467,33 @@ class TestColumnarWithJoin(TestCase):
     @use_temp_s3_folder
     def test_polars_s3(self):
         self.run_test("polars", S3FileDataManager(self.s3_bucket, self.s3_folder))
+
+    @use_temp_folder
+    def test_pandas_duckdb(self):
+        self.run_test(
+            "pandas", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_dask_duckdb(self):
+        self.run_test(
+            "dask", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_spark_duckdb(self):
+        self.run_test(
+            "spark", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_pyarrow_duckdb(self):
+        self.run_test(
+            "pyarrow", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )
+
+    @use_temp_folder
+    def test_polars_duckdb(self):
+        self.run_test(
+            "polars", DuckdbDataManager(os.path.join(self.temp_directory, "test.db"))
+        )

@@ -37,10 +37,6 @@ class Tickers(DataNode):
 
 class CompanyData(DataNode):
     @property
-    def calculator_type(self):
-        return "pandas"
-
-    @property
     def schema(self):
         return {
             "Ticker": (str, ColumnCategory.KEY),
@@ -78,20 +74,24 @@ class CompanyData(DataNode):
         ebitda = []
 
         for ticker in tickers_df["Ticker"].tolist():
-            ticker_proxy = yf.Ticker(ticker)
-            data = ticker_proxy.info
-            tickers.append(ticker)
-            closes.append(data.get("previousClose"))
-            volumes.append(data.get("volume"))
-            market_caps.append(data.get("marketCap"))
-            currencies.append(data.get("currency"))
-            book_values.append(data.get("bookValue"))
-            net_incomes.append(data.get("netIncomeToCommon"))
-            shares_outstandings.append(data.get("sharesOutstanding"))
-            free_cash_flows.append(data.get("freeCashflow"))
-            operating_cash_flows.append(data.get("operatingCashflow"))
-            enterprise_values.append(data.get("enterpriseValue"))
-            ebitda.append(data.get("ebitda"))
+            try:
+                ticker_proxy = yf.Ticker(ticker)
+                data = ticker_proxy.info
+                tickers.append(ticker)
+                closes.append(data.get("previousClose"))
+                volumes.append(data.get("volume"))
+                market_caps.append(data.get("marketCap"))
+                currencies.append(data.get("currency"))
+                book_values.append(data.get("bookValue"))
+                net_incomes.append(data.get("netIncomeToCommon"))
+                shares_outstandings.append(data.get("sharesOutstanding"))
+                free_cash_flows.append(data.get("freeCashflow"))
+                operating_cash_flows.append(data.get("operatingCashflow"))
+                enterprise_values.append(data.get("enterpriseValue"))
+                ebitda.append(data.get("ebitda"))
+            except Exception:
+                # For simplicity we will just ignore the missing tickers
+                pass
 
         return pd.DataFrame(
             {
@@ -112,10 +112,6 @@ class CompanyData(DataNode):
 
 
 class AccountingRatio(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def numerator(self):
         raise NotImplementedError
@@ -157,10 +153,6 @@ class EPS(AccountingRatio):
 
 
 class PriceToEarnings(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def schema(self):
         return {
@@ -228,10 +220,6 @@ class PriceToBook(AccountingRatio):
 
 
 class Rank(DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     def __init__(self, calculator_factory, data_manager_factory, ratio_name, **kwargs):
         self._ratio_name = ratio_name
         super().__init__(calculator_factory, data_manager_factory, **kwargs)
@@ -264,6 +252,7 @@ coordinator = Coordinator("test")
 coordinator.set_data_manager(
     "sqlite", SqliteDataManager("TestDb/test.db"), default=True
 )
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(CompanyData)
 coordinator.create_data_node(EPS)
@@ -281,7 +270,7 @@ coordinator.set_up()
 
 coordinator.run_recursively(
     node_identifiers=["Tickers"],
-    global_parameters={"DataDate": date(2023, 4, 14)},
+    global_parameters={"DataDate": date(2023, 6, 14)},
 )
 
 priceToBook = coordinator.get_data_node("PriceToBook")
@@ -290,7 +279,7 @@ priceToBookDf = priceToBook.load(columns=["Ticker", "PriceToBook"])
 priceToBookRank = coordinator.get_data_node("PriceToBookRank")
 rankDf = priceToBookRank.load(
     columns=["Ticker", "PriceToBookRank"],
-    filters=[[("DataDate", "=", date(2023, 4, 14)), ("PriceToBookRank", "<", 10)]],
+    filters=[[("DataDate", "=", date(2023, 6, 14)), ("PriceToBookRank", "<", 10)]],
 )
 
 data = pd.merge(rankDf, priceToBookDf, how="inner", on="Ticker").sort_values(

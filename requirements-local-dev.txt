@@ -5,6 +5,7 @@ boto3
 dask[complete]
 delta-spark
 deltalake
+duckdb
 fasteners
 flake8
 isort

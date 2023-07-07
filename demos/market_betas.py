@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-# import sys
+import sys
 
-# sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from nodalize.constants.column_category import ColumnCategory
 from nodalize.custom_dependencies.lag import WeekDayLagDependency
@@ -19,10 +19,6 @@ from nodalize.orchestration.coordinator import Coordinator
 
 
 class PandasNode(ABC, DataNode):
-    @property
-    def calculator_type(self):
-        return "pandas"
-
     @property
     def value_columns(self):
         return {}
@@ -139,6 +135,7 @@ coordinator = Coordinator("test")
 coordinator.set_data_manager(
     "kdb", KdbDataManager(None, "localhost", 5000, lambda: (None, None)), default=True
 )
+coordinator.set_calculator("pandas", default=True)
 coordinator.create_data_node(Tickers)
 coordinator.create_data_node(AdjustedPriceClose)
 coordinator.create_data_node(Return)

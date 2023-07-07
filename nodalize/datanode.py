@@ -56,14 +56,14 @@ class DataNode:
         self._dependency_definitions = dependencies
 
     @property
-    def calculator_type(self) -> str:
+    def calculator_type(self) -> Optional[str]:
         """
         Return name of calculator to use.
 
         Returns:
             calculator name
         """
-        raise AssertionError("Calculator type not defined")
+        return None
 
     @property
     def calculator(self) -> Calculator:
